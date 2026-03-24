@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+torch
+git+https://github.com/openai/CLIP.git
+requests
+python-multipart
+pillow
+numpy
+nltk
+plotly
+pydantic
