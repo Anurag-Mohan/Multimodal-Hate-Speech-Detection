@@ -1,18 +1,19 @@
 import 'package:flutter/material.dart';
+import 'dart:ui';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'dart:math' as math;
 import '../services/api_service.dart';
 
-const kBg = Color(0xFF000000);
-const kSurface = Color(0xFF111111);
-const kCard = Color(0xFF1A1A1A);
-const kBorder = Color(0xFF262626);
-const kAccent = Color(0xFF00f2fe);
-const kAccent2 = Color(0xFF4facfe);
-const kMuted = Color(0xFF8e8e8e);
-const kTermBg = Color(0xFF090E14);
+const kBg = Color(0xFF09090B);
+const kSurface = Color(0xFF141416);
+const kCard = Color(0xFF1C1C1F);
+const kBorder = Color(0xFF27272A);
+const kAccent = Color(0xFFC9A84C);
+const kAccent2 = Color(0xFFF0D78C);
+const kMuted = Color(0xFF71717A);
+const kTermBg = Color(0xFF0C0C0E);
 
 class _LogEntry {
   final String text;
@@ -67,6 +68,7 @@ class _UploadScreenState extends State<UploadScreen>
   late AnimationController _ringCtrl;
   late AnimationController _glowCtrl;
   late AnimationController _resultCtrl;
+  late AnimationController _scanlineCtrl;
   late Animation<double> _resultFade;
   late Animation<Offset> _resultSlide;
   late Animation<double> _glowAnim;
@@ -95,6 +97,10 @@ class _UploadScreenState extends State<UploadScreen>
       begin: const Offset(0, 0.12),
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _resultCtrl, curve: Curves.easeOutCubic));
+    _scanlineCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2200),
+    );
   }
 
   @override
@@ -102,102 +108,115 @@ class _UploadScreenState extends State<UploadScreen>
     _ringCtrl.dispose();
     _glowCtrl.dispose();
     _resultCtrl.dispose();
+    _scanlineCtrl.dispose();
     super.dispose();
   }
 
   Future<void> _pickImage(ImageSource src) async {
     final f = await ImagePicker().pickImage(source: src);
-    if (f != null)
+    if (f != null) {
       setState(() {
         _image = File(f.path);
         _scanResult = null;
         _logs.clear();
         _scanProgress = 0;
       });
+    }
   }
 
   void _showPickerSheet() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF1C1C1E),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+      backgroundColor: Colors.transparent,
       builder:
-          (_) => SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 36,
-                    height: 4,
-                    margin: const EdgeInsets.only(bottom: 16),
-                    decoration: BoxDecoration(
-                      color: kMuted,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                  ListTile(
-                    leading: Container(
-                      width: 40,
-                      height: 40,
+          (_) => Container(
+            decoration: const BoxDecoration(
+              color: kCard,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            child: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 36,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: 16),
                       decoration: BoxDecoration(
-                        color: kAccent.withOpacity(0.12),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(
-                        Icons.photo_library_outlined,
-                        color: kAccent,
+                        color: kBorder,
+                        borderRadius: BorderRadius.circular(2),
                       ),
                     ),
-                    title: Text(
-                      'Photo Library',
-                      style: GoogleFonts.inter(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w500,
+                    ListTile(
+                      leading: Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          color: kAccent.withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: kAccent.withOpacity(0.15),
+                          ),
+                        ),
+                        child: const Icon(
+                          Icons.photo_library_outlined,
+                          color: kAccent,
+                          size: 20,
+                        ),
                       ),
-                    ),
-                    subtitle: Text(
-                      'Choose existing photo',
-                      style: GoogleFonts.inter(color: kMuted, fontSize: 12),
-                    ),
-                    onTap: () {
-                      Navigator.pop(context);
-                      _pickImage(ImageSource.gallery);
-                    },
-                  ),
-                  ListTile(
-                    leading: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: kAccent.withOpacity(0.12),
-                        borderRadius: BorderRadius.circular(12),
+                      title: Text(
+                        'Photo Library',
+                        style: GoogleFonts.inter(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
-                      child: const Icon(
-                        Icons.camera_alt_outlined,
-                        color: kAccent,
+                      subtitle: Text(
+                        'Choose existing photo',
+                        style: GoogleFonts.inter(color: kMuted, fontSize: 12),
                       ),
+                      onTap: () {
+                        Navigator.pop(context);
+                        _pickImage(ImageSource.gallery);
+                      },
                     ),
-                    title: Text(
-                      'Camera',
-                      style: GoogleFonts.inter(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w500,
+                    ListTile(
+                      leading: Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          color: kAccent.withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: kAccent.withOpacity(0.15),
+                          ),
+                        ),
+                        child: const Icon(
+                          Icons.camera_alt_outlined,
+                          color: kAccent,
+                          size: 20,
+                        ),
                       ),
+                      title: Text(
+                        'Camera',
+                        style: GoogleFonts.inter(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      subtitle: Text(
+                        'Take a new photo',
+                        style: GoogleFonts.inter(color: kMuted, fontSize: 12),
+                      ),
+                      onTap: () {
+                        Navigator.pop(context);
+                        _pickImage(ImageSource.camera);
+                      },
                     ),
-                    subtitle: Text(
-                      'Take a new photo',
-                      style: GoogleFonts.inter(color: kMuted, fontSize: 12),
-                    ),
-                    onTap: () {
-                      Navigator.pop(context);
-                      _pickImage(ImageSource.camera);
-                    },
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -212,6 +231,7 @@ class _UploadScreenState extends State<UploadScreen>
       _scanProgress = 0;
       _scanResult = null;
     });
+    _scanlineCtrl.repeat();
 
     final total = _rawLogs.length;
     for (int i = 0; i < total; i++) {
@@ -235,6 +255,7 @@ class _UploadScreenState extends State<UploadScreen>
     try {
       final result = await ApiService.scanMedia(_image!);
       if (!mounted) return;
+      _scanlineCtrl.stop();
       setState(() {
         _scanResult = result;
         _isScanning = false;
@@ -242,6 +263,7 @@ class _UploadScreenState extends State<UploadScreen>
       _resultCtrl.forward(from: 0);
     } catch (e) {
       if (!mounted) return;
+      _scanlineCtrl.stop();
       setState(() {
         _logs.add(_LogEntry('ERROR: $e', _LogLevel.warn));
         _isScanning = false;
@@ -254,12 +276,18 @@ class _UploadScreenState extends State<UploadScreen>
     return Scaffold(
       backgroundColor: kBg,
       appBar: AppBar(
-        backgroundColor: kBg,
+        backgroundColor: kBg.withOpacity(0.85),
         elevation: 0,
         surfaceTintColor: Colors.transparent,
+        flexibleSpace: ClipRRect(
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+            child: Container(color: Colors.transparent),
+          ),
+        ),
         leading: GestureDetector(
           onTap: () => Navigator.pop(context),
-          child: const Icon(Icons.close, color: Colors.white, size: 26),
+          child: const Icon(Icons.close, color: Colors.white70, size: 24),
         ),
         title: Text(
           'New Post',
@@ -292,8 +320,11 @@ class _UploadScreenState extends State<UploadScreen>
           const SizedBox(width: 4),
         ],
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(0.5),
-          child: Divider(color: kBorder, height: 0.5),
+          preferredSize: const Size.fromHeight(0.3),
+          child: Divider(
+            color: kBorder.withOpacity(0.5),
+            height: 0.3,
+          ),
         ),
       ),
       body: SingleChildScrollView(
@@ -329,7 +360,6 @@ class _UploadScreenState extends State<UploadScreen>
     return AnimatedBuilder(
       animation: _glowAnim,
       builder: (_, child) {
-        final glowOpacity = _isScanning ? _glowAnim.value * 0.6 : 0.0;
         return AnimatedContainer(
           duration: const Duration(milliseconds: 400),
           height: _image != null ? 320 : 240,
@@ -339,19 +369,19 @@ class _UploadScreenState extends State<UploadScreen>
             border: Border.all(
               color:
                   _isScanning
-                      ? kAccent.withOpacity(0.4 + _glowAnim.value * 0.4)
+                      ? kAccent.withOpacity(0.15 + _glowAnim.value * 0.15)
                       : _image != null
-                      ? kAccent.withOpacity(0.3)
-                      : kBorder,
-              width: _isScanning ? 1.5 : 1,
+                      ? kBorder.withOpacity(0.6)
+                      : kBorder.withOpacity(0.4),
+              width: 1,
             ),
             boxShadow:
                 _isScanning
                     ? [
                       BoxShadow(
-                        color: kAccent.withOpacity(glowOpacity),
-                        blurRadius: 24,
-                        spreadRadius: 2,
+                        color: kAccent.withOpacity(0.06),
+                        blurRadius: 30,
+                        spreadRadius: 0,
                       ),
                     ]
                     : [],
@@ -371,22 +401,54 @@ class _UploadScreenState extends State<UploadScreen>
         Image.file(_image!, fit: BoxFit.cover),
         if (_isScanning)
           AnimatedBuilder(
-            animation: _glowAnim,
-            builder:
-                (_, __) => Container(
-                  color: kAccent.withOpacity(0.08 + _glowAnim.value * 0.06),
-                  child: Center(
-                    child: Text(
-                      'ANALYSING…',
-                      style: GoogleFonts.inter(
-                        color: kAccent.withOpacity(0.7 + _glowAnim.value * 0.3),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 3,
+            animation: _scanlineCtrl,
+            builder: (_, __) {
+              return Stack(
+                children: [
+                  Container(
+                    color: Colors.black.withOpacity(0.15),
+                  ),
+                  Positioned(
+                    top: _scanlineCtrl.value * 320,
+                    left: 0,
+                    right: 0,
+                    child: Container(
+                      height: 2,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.transparent,
+                            kAccent.withOpacity(0.6),
+                            kAccent2.withOpacity(0.8),
+                            kAccent.withOpacity(0.6),
+                            Colors.transparent,
+                          ],
+                          stops: const [0, 0.2, 0.5, 0.8, 1],
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: kAccent.withOpacity(0.3),
+                            blurRadius: 12,
+                            spreadRadius: 2,
+                          ),
+                        ],
                       ),
                     ),
                   ),
-                ),
+                  Center(
+                    child: Text(
+                      'ANALYSING',
+                      style: GoogleFonts.outfit(
+                        color: Colors.white.withOpacity(0.5),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 4,
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
         if (!_isScanning && _scanResult == null)
           Positioned(
@@ -394,33 +456,41 @@ class _UploadScreenState extends State<UploadScreen>
             right: 12,
             child: GestureDetector(
               onTap: _showPickerSheet,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.black87,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.white24),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.edit_outlined,
-                      color: Colors.white,
-                      size: 14,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 8,
                     ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Change',
-                      style: GoogleFonts.inter(
-                        color: Colors.white,
-                        fontSize: 12,
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.1),
                       ),
                     ),
-                  ],
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.edit_outlined,
+                          color: Colors.white70,
+                          size: 13,
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          'Change',
+                          style: GoogleFonts.inter(
+                            color: Colors.white70,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -437,13 +507,14 @@ class _UploadScreenState extends State<UploadScreen>
           width: 72,
           height: 72,
           decoration: BoxDecoration(
-            color: kBorder,
+            color: kBorder.withOpacity(0.4),
             borderRadius: BorderRadius.circular(36),
+            border: Border.all(color: kBorder.withOpacity(0.6)),
           ),
-          child: const Icon(
+          child: Icon(
             Icons.add_photo_alternate_outlined,
-            color: Colors.white70,
-            size: 36,
+            color: kMuted.withOpacity(0.7),
+            size: 34,
           ),
         ),
         const SizedBox(height: 16),
@@ -489,6 +560,7 @@ class _UploadScreenState extends State<UploadScreen>
         decoration: BoxDecoration(
           border: Border.all(color: kBorder),
           borderRadius: BorderRadius.circular(12),
+          color: kSurface.withOpacity(0.5),
         ),
         child: Row(
           children: [
@@ -508,12 +580,16 @@ class _UploadScreenState extends State<UploadScreen>
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        gradient: const LinearGradient(colors: [kAccent, kAccent2]),
+        gradient: const LinearGradient(
+          colors: [kAccent, kAccent2],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+        ),
         boxShadow: [
           BoxShadow(
-            color: kAccent.withOpacity(0.38),
-            blurRadius: 22,
-            offset: const Offset(0, 7),
+            color: kAccent.withOpacity(0.2),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
@@ -523,23 +599,23 @@ class _UploadScreenState extends State<UploadScreen>
           borderRadius: BorderRadius.circular(16),
           onTap: _initiateDeepScan,
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 17),
+            padding: const EdgeInsets.symmetric(vertical: 18),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 const Icon(
                   Icons.shield_outlined,
-                  color: Colors.black,
+                  color: Color(0xFF09090B),
                   size: 22,
                 ),
                 const SizedBox(width: 10),
                 Text(
                   'Run Sentinel Scan',
                   style: GoogleFonts.outfit(
-                    color: Colors.black,
+                    color: const Color(0xFF09090B),
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
-                    letterSpacing: 0.5,
+                    letterSpacing: 0.3,
                   ),
                 ),
               ],
@@ -612,10 +688,7 @@ class _UploadScreenState extends State<UploadScreen>
           decoration: BoxDecoration(
             color: kTermBg,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: kAccent.withOpacity(0.2)),
-            boxShadow: [
-              BoxShadow(color: kAccent.withOpacity(0.05), blurRadius: 12),
-            ],
+            border: Border.all(color: kBorder.withOpacity(0.6)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -626,13 +699,13 @@ class _UploadScreenState extends State<UploadScreen>
                   vertical: 9,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF0D0D0D),
+                  color: const Color(0xFF0E0E10),
                   borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(13),
                     topRight: Radius.circular(13),
                   ),
                   border: Border(
-                    bottom: BorderSide(color: kAccent.withOpacity(0.15)),
+                    bottom: BorderSide(color: kBorder.withOpacity(0.4)),
                   ),
                 ),
                 child: Row(
@@ -669,8 +742,8 @@ class _UploadScreenState extends State<UploadScreen>
   }
 
   Widget _dot(Color c) => Container(
-    width: 11,
-    height: 11,
+    width: 10,
+    height: 10,
     decoration: BoxDecoration(color: c, shape: BoxShape.circle),
   );
 
@@ -692,18 +765,18 @@ class _UploadScreenState extends State<UploadScreen>
                 margin: const EdgeInsets.symmetric(horizontal: 3),
                 padding: const EdgeInsets.symmetric(vertical: 7),
                 decoration: BoxDecoration(
-                  color: done ? kAccent.withOpacity(0.12) : kSurface,
+                  color: done ? kAccent.withOpacity(0.08) : kSurface,
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: done ? kAccent.withOpacity(0.5) : kBorder,
-                    width: done ? 1 : 0.5,
+                    color: done ? kAccent.withOpacity(0.35) : kBorder.withOpacity(0.5),
+                    width: 0.5,
                   ),
                 ),
                 child: Column(
                   children: [
                     Icon(
                       done ? Icons.check_circle : Icons.radio_button_unchecked,
-                      color: done ? kAccent : kMuted,
+                      color: done ? kAccent : kMuted.withOpacity(0.5),
                       size: 14,
                     ),
                     const SizedBox(height: 4),
@@ -711,7 +784,7 @@ class _UploadScreenState extends State<UploadScreen>
                       p.$1,
                       style: GoogleFonts.firaCode(
                         fontSize: 9,
-                        color: done ? kAccent : kMuted,
+                        color: done ? kAccent : kMuted.withOpacity(0.5),
                         fontWeight: done ? FontWeight.w600 : FontWeight.w400,
                       ),
                       textAlign: TextAlign.center,
@@ -735,21 +808,22 @@ class _UploadScreenState extends State<UploadScreen>
 
     final statusColor =
         isHateful ? const Color(0xFFef4444) : const Color(0xFF22c55e);
+    final statusBg =
+        isHateful ? const Color(0xFF1a0505) : const Color(0xFF051a0d);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const SizedBox(height: 8),
         Container(
-          padding: const EdgeInsets.all(22),
+          padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color:
-                isHateful ? const Color(0xFF1a0505) : const Color(0xFF051a0d),
+            color: statusBg,
             borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(20),
               topRight: Radius.circular(20),
             ),
-            border: Border.all(color: statusColor.withOpacity(0.35)),
+            border: Border.all(color: statusColor.withOpacity(0.2)),
           ),
           child: Column(
             children: [
@@ -758,9 +832,9 @@ class _UploadScreenState extends State<UploadScreen>
                 height: 78,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: statusColor.withOpacity(0.1),
+                  color: statusColor.withOpacity(0.08),
                   border: Border.all(
-                    color: statusColor.withOpacity(0.3),
+                    color: statusColor.withOpacity(0.2),
                     width: 1.5,
                   ),
                 ),
@@ -770,23 +844,23 @@ class _UploadScreenState extends State<UploadScreen>
                   size: 38,
                 ),
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 16),
               Text(
-                isHateful ? '🚨 Content Violation' : '✅ Content Approved',
+                isHateful ? 'Content Violation' : 'Content Approved',
                 style: GoogleFonts.outfit(
                   color: statusColor,
-                  fontSize: 22,
+                  fontSize: 24,
                   fontWeight: FontWeight.w700,
                 ),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 8),
               Text(
                 isHateful
                     ? 'This content violates community guidelines\nand cannot be posted.'
                     : 'All safety checks passed.\nThis content is cleared for sharing.',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.inter(
-                  color: Colors.white60,
+                  color: Colors.white.withOpacity(0.45),
                   fontSize: 13,
                   height: 1.55,
                 ),
@@ -799,8 +873,8 @@ class _UploadScreenState extends State<UploadScreen>
           decoration: BoxDecoration(
             color: kCard,
             border: Border(
-              left: BorderSide(color: statusColor.withOpacity(0.35)),
-              right: BorderSide(color: statusColor.withOpacity(0.35)),
+              left: BorderSide(color: statusColor.withOpacity(0.2)),
+              right: BorderSide(color: statusColor.withOpacity(0.2)),
             ),
           ),
           child: Column(
@@ -839,7 +913,7 @@ class _UploadScreenState extends State<UploadScreen>
                   value: prob / 100,
                   backgroundColor: kBorder,
                   valueColor: AlwaysStoppedAnimation<Color>(statusColor),
-                  minHeight: 7,
+                  minHeight: 6,
                 ),
               ),
               const SizedBox(height: 4),
@@ -849,14 +923,14 @@ class _UploadScreenState extends State<UploadScreen>
                   Text(
                     'Safe',
                     style: GoogleFonts.firaCode(
-                      color: const Color(0xFF22c55e),
+                      color: const Color(0xFF4ade80),
                       fontSize: 10,
                     ),
                   ),
                   Text(
                     'Toxic',
                     style: GoogleFonts.firaCode(
-                      color: const Color(0xFFef4444),
+                      color: const Color(0xFFf87171),
                       fontSize: 10,
                     ),
                   ),
@@ -866,7 +940,7 @@ class _UploadScreenState extends State<UploadScreen>
                 const SizedBox(height: 20),
                 Row(
                   children: [
-                    const Icon(Icons.text_fields, color: kMuted, size: 14),
+                    Icon(Icons.text_fields, color: kMuted, size: 14),
                     const SizedBox(width: 6),
                     Text(
                       'Extracted Text (OCR)',
@@ -881,7 +955,7 @@ class _UploadScreenState extends State<UploadScreen>
                   decoration: BoxDecoration(
                     color: kBg,
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: kBorder),
+                    border: Border.all(color: kBorder.withOpacity(0.5)),
                   ),
                   child: Text(
                     '"$extracted"',
@@ -908,9 +982,9 @@ class _UploadScreenState extends State<UploadScreen>
               bottomRight: Radius.circular(20),
             ),
             border: Border(
-              left: BorderSide(color: statusColor.withOpacity(0.35)),
-              right: BorderSide(color: statusColor.withOpacity(0.35)),
-              bottom: BorderSide(color: statusColor.withOpacity(0.35)),
+              left: BorderSide(color: statusColor.withOpacity(0.2)),
+              right: BorderSide(color: statusColor.withOpacity(0.2)),
+              bottom: BorderSide(color: statusColor.withOpacity(0.2)),
             ),
           ),
           padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
@@ -918,8 +992,8 @@ class _UploadScreenState extends State<UploadScreen>
               isHateful
                   ? OutlinedButton.icon(
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.white70,
-                      side: const BorderSide(color: kBorder),
+                      foregroundColor: Colors.white60,
+                      side: BorderSide(color: kBorder.withOpacity(0.6)),
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -940,9 +1014,9 @@ class _UploadScreenState extends State<UploadScreen>
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: kAccent.withOpacity(0.3),
-                          blurRadius: 16,
-                          offset: const Offset(0, 5),
+                          color: kAccent.withOpacity(0.2),
+                          blurRadius: 20,
+                          offset: const Offset(0, 6),
                         ),
                       ],
                     ),
@@ -958,14 +1032,14 @@ class _UploadScreenState extends State<UploadScreen>
                             children: [
                               const Icon(
                                 Icons.send_rounded,
-                                color: Colors.black,
+                                color: Color(0xFF09090B),
                                 size: 18,
                               ),
                               const SizedBox(width: 8),
                               Text(
                                 'Share to Feed',
                                 style: GoogleFonts.outfit(
-                                  color: Colors.black,
+                                  color: const Color(0xFF09090B),
                                   fontSize: 15,
                                   fontWeight: FontWeight.w700,
                                 ),
@@ -996,8 +1070,8 @@ class _ArcPainter extends CustomPainter {
       c,
       r,
       Paint()
-        ..color = const Color(0xFF1E1E1E)
-        ..strokeWidth = 5
+        ..color = const Color(0xFF27272A)
+        ..strokeWidth = 4
         ..style = PaintingStyle.stroke,
     );
 
@@ -1008,8 +1082,8 @@ class _ArcPainter extends CustomPainter {
         2 * math.pi * progress,
         false,
         Paint()
-          ..color = kAccent.withOpacity(0.15)
-          ..strokeWidth = 5
+          ..color = kAccent.withOpacity(0.12)
+          ..strokeWidth = 4
           ..style = PaintingStyle.stroke,
       );
     }
@@ -1029,7 +1103,7 @@ class _ArcPainter extends CustomPainter {
       false,
       Paint()
         ..shader = grad
-        ..strokeWidth = 5
+        ..strokeWidth = 4
         ..strokeCap = StrokeCap.round
         ..style = PaintingStyle.stroke,
     );
@@ -1070,12 +1144,13 @@ class _LogListViewState extends State<_LogListView> {
     super.didUpdateWidget(old);
     if (widget.logs.length != old.logs.length) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (_sc.hasClients)
+        if (_sc.hasClients) {
           _sc.animateTo(
             _sc.position.maxScrollExtent,
             duration: const Duration(milliseconds: 250),
             curve: Curves.easeOut,
           );
+        }
       });
     }
   }
@@ -1145,11 +1220,11 @@ class _LogLineState extends State<_LogLine>
     String prefix;
     switch (e.level) {
       case _LogLevel.ok:
-        col = const Color(0xFF22c55e);
+        col = const Color(0xFF4ade80);
         prefix = '✓ ';
         break;
       case _LogLevel.warn:
-        col = const Color(0xFFef4444);
+        col = const Color(0xFFf87171);
         prefix = '✗ ';
         break;
       case _LogLevel.highlight:
@@ -1171,7 +1246,7 @@ class _LogLineState extends State<_LogLine>
             children: [
               TextSpan(
                 text: '${widget.index.toString().padLeft(2, '0')}  ',
-                style: TextStyle(color: const Color(0xFF374151)),
+                style: const TextStyle(color: Color(0xFF374151)),
               ),
               TextSpan(text: prefix, style: TextStyle(color: col)),
               TextSpan(text: e.text, style: TextStyle(color: col)),
@@ -1248,8 +1323,8 @@ class _BlinkingDotState extends State<_BlinkingDot>
     animation: _c,
     builder:
         (_, __) => Container(
-          width: 7,
-          height: 7,
+          width: 6,
+          height: 6,
           decoration: BoxDecoration(
             color: kAccent.withOpacity(_c.value),
             shape: BoxShape.circle,

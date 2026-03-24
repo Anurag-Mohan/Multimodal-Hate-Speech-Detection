@@ -3,6 +3,9 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 
 class ApiService {
+  // 🔴 CRITICAL: PASTE YOUR NGROK URL HERE BEFORE BUILDING THE APK!
+  // Example: 'https://1234-56-78-90.ngrok-free.app'
+  // Do NOT put a trailing slash '/' at the end.
   static const String baseUrl =
       'https://crowded-bitterly-mafalda.ngrok-free.dev';
 

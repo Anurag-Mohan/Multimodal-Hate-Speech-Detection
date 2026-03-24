@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'dart:ui';
 import 'package:google_fonts/google_fonts.dart';
 import 'upload_screen.dart';
 
-const kBg = Color(0xFF000000);
-const kCard = Color(0xFF111111);
-const kSurface = Color(0xFF1A1A1A);
-const kBorder = Color(0xFF262626);
-const kAccent = Color(0xFF00f2fe);
-const kAccent2 = Color(0xFF4facfe);
-const kMuted = Color(0xFF8e8e8e);
+const kBg = Color(0xFF09090B);
+const kCard = Color(0xFF141416);
+const kSurface = Color(0xFF1C1C1F);
+const kBorder = Color(0xFF27272A);
+const kAccent = Color(0xFFC9A84C);
+const kAccent2 = Color(0xFFF0D78C);
+const kMuted = Color(0xFF71717A);
 
 const _posts = [
   {
@@ -89,6 +90,7 @@ class FeedScreen extends StatefulWidget {
 
 class _FeedScreenState extends State<FeedScreen> {
   final Set<int> _liked = {};
+  int _activeNav = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -101,7 +103,7 @@ class _FeedScreenState extends State<FeedScreen> {
             _buildAppBar(context),
             SliverToBoxAdapter(child: _buildStoriesRow()),
             SliverToBoxAdapter(
-              child: Divider(color: kBorder, thickness: 0.5, height: 1),
+              child: Divider(color: kBorder.withOpacity(0.5), thickness: 0.3, height: 0.3),
             ),
             SliverList(
               delegate: SliverChildBuilderDelegate(
@@ -119,6 +121,7 @@ class _FeedScreenState extends State<FeedScreen> {
             const SliverToBoxAdapter(child: SizedBox(height: 80)),
           ],
         ),
+        extendBody: true,
         bottomNavigationBar: _buildBottomNav(context),
       ),
     );
@@ -127,13 +130,21 @@ class _FeedScreenState extends State<FeedScreen> {
   SliverAppBar _buildAppBar(BuildContext context) {
     return SliverAppBar(
       pinned: true,
-      backgroundColor: kBg,
+      backgroundColor: kBg.withOpacity(0.85),
       surfaceTintColor: Colors.transparent,
       elevation: 0,
+      flexibleSpace: ClipRRect(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          child: Container(color: Colors.transparent),
+        ),
+      ),
       title: ShaderMask(
         shaderCallback:
             (bounds) => const LinearGradient(
-              colors: [kAccent, kAccent2, Color(0xFFa18cd1)],
+              colors: [kAccent, kAccent2],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ).createShader(bounds),
         child: Text(
           'Sentinel',
@@ -146,70 +157,71 @@ class _FeedScreenState extends State<FeedScreen> {
       ),
       actions: [
         IconButton(
-          icon: const Icon(Icons.add_box_outlined, size: 26),
+          icon: const Icon(Icons.add_box_outlined, size: 25),
           onPressed:
               () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const UploadScreen()),
               ),
-          color: Colors.white,
+          color: Colors.white70,
           tooltip: 'New Post',
         ),
         Stack(
           children: [
             IconButton(
-              icon: const Icon(Icons.favorite_border, size: 26),
+              icon: const Icon(Icons.favorite_border, size: 25),
               onPressed: () {},
-              color: Colors.white,
+              color: Colors.white70,
             ),
             Positioned(
-              right: 8,
-              top: 8,
+              right: 9,
+              top: 9,
               child: Container(
-                width: 8,
-                height: 8,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFff3b5c),
+                width: 7,
+                height: 7,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFDC2626),
                   shape: BoxShape.circle,
+                  border: Border.all(color: kBg, width: 1.5),
                 ),
               ),
             ),
           ],
         ),
         IconButton(
-          icon: const Icon(Icons.send_outlined, size: 26),
+          icon: const Icon(Icons.send_outlined, size: 25),
           onPressed: () {},
-          color: Colors.white,
+          color: Colors.white70,
         ),
         const SizedBox(width: 4),
       ],
       bottom: PreferredSize(
-        preferredSize: const Size.fromHeight(0.5),
-        child: Divider(color: kBorder, height: 0.5, thickness: 0.5),
+        preferredSize: const Size.fromHeight(0.3),
+        child: Divider(color: kBorder.withOpacity(0.5), height: 0.3, thickness: 0.3),
       ),
     );
   }
 
   Widget _buildStoriesRow() {
     return SizedBox(
-      height: 106,
+      height: 116,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         itemCount: _stories.length,
         itemBuilder: (ctx, i) {
           final s = _stories[i];
           final isYou = s['isYou'] as bool;
           return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 7),
             child: Column(
               children: [
                 Stack(
                   alignment: Alignment.center,
                   children: [
                     Container(
-                      width: 68,
-                      height: 68,
+                      width: 70,
+                      height: 70,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         gradient:
@@ -217,10 +229,9 @@ class _FeedScreenState extends State<FeedScreen> {
                                 ? null
                                 : const LinearGradient(
                                   colors: [
-                                    Color(0xFFf58529),
-                                    Color(0xFFdd2a7b),
-                                    Color(0xFF8134af),
-                                    Color(0xFF515bd4),
+                                    Color(0xFFC9A84C),
+                                    Color(0xFFE8C86A),
+                                    Color(0xFFF0D78C),
                                   ],
                                   begin: Alignment.bottomLeft,
                                   end: Alignment.topRight,
@@ -233,9 +244,16 @@ class _FeedScreenState extends State<FeedScreen> {
                       ),
                       child: Padding(
                         padding: const EdgeInsets.all(2.5),
-                        child: CircleAvatar(
-                          backgroundImage: NetworkImage(s['avatar'] as String),
-                          backgroundColor: kSurface,
+                        child: Container(
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: kBg,
+                          ),
+                          padding: const EdgeInsets.all(1.5),
+                          child: CircleAvatar(
+                            backgroundImage: NetworkImage(s['avatar'] as String),
+                            backgroundColor: kSurface,
+                          ),
                         ),
                       ),
                     ),
@@ -246,25 +264,28 @@ class _FeedScreenState extends State<FeedScreen> {
                         child: Container(
                           width: 22,
                           height: 22,
-                          decoration: const BoxDecoration(
-                            color: kAccent,
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [kAccent, kAccent2],
+                            ),
                             shape: BoxShape.circle,
+                            border: Border.all(color: kBg, width: 2),
                           ),
                           child: const Icon(
                             Icons.add,
-                            size: 16,
-                            color: Colors.black,
+                            size: 14,
+                            color: Color(0xFF09090B),
                           ),
                         ),
                       ),
                   ],
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
                 Text(
                   s['name'] as String,
                   style: GoogleFonts.inter(
                     fontSize: 11,
-                    color: Colors.white,
+                    color: Colors.white70,
                     fontWeight: FontWeight.w400,
                   ),
                   overflow: TextOverflow.ellipsis,
@@ -278,41 +299,70 @@ class _FeedScreenState extends State<FeedScreen> {
   }
 
   Widget _buildBottomNav(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: kBg,
-        border: Border(top: BorderSide(color: kBorder, width: 0.5)),
-      ),
-      child: SafeArea(
-        child: SizedBox(
-          height: 52,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _NavIcon(icon: Icons.home, active: true, onTap: () {}),
-              _NavIcon(icon: Icons.search, active: false, onTap: () {}),
-              _NavIcon(
-                icon: Icons.add_box_outlined,
-                active: false,
-                onTap:
-                    () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const UploadScreen()),
-                    ),
-              ),
-              _NavIcon(icon: Icons.movie_outlined, active: false, onTap: () {}),
-              _NavIcon(
-                iconWidget: CircleAvatar(
-                  radius: 13,
-                  backgroundImage: const NetworkImage(
-                    'https://i.pravatar.cc/150?img=5',
+    return ClipRRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
+        child: Container(
+          decoration: BoxDecoration(
+            color: kBg.withOpacity(0.78),
+            border: Border(
+              top: BorderSide(color: kBorder.withOpacity(0.4), width: 0.3),
+            ),
+          ),
+          child: SafeArea(
+            child: SizedBox(
+              height: 54,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _NavIcon(
+                    icon: Icons.home_filled,
+                    active: _activeNav == 0,
+                    onTap: () => setState(() => _activeNav = 0),
                   ),
-                  backgroundColor: kSurface,
-                ),
-                active: false,
-                onTap: () {},
+                  _NavIcon(
+                    icon: Icons.search,
+                    active: _activeNav == 1,
+                    onTap: () => setState(() => _activeNav = 1),
+                  ),
+                  _NavIcon(
+                    icon: Icons.add_box_outlined,
+                    active: false,
+                    onTap:
+                        () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const UploadScreen()),
+                        ),
+                  ),
+                  _NavIcon(
+                    icon: Icons.movie_outlined,
+                    active: _activeNav == 3,
+                    onTap: () => setState(() => _activeNav = 3),
+                  ),
+                  _NavIcon(
+                    iconWidget: Container(
+                      padding: const EdgeInsets.all(1.5),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: _activeNav == 4 ? kAccent : Colors.transparent,
+                          width: 1.5,
+                        ),
+                      ),
+                      child: CircleAvatar(
+                        radius: 12,
+                        backgroundImage: const NetworkImage(
+                          'https://i.pravatar.cc/150?img=5',
+                        ),
+                        backgroundColor: kSurface,
+                      ),
+                    ),
+                    active: _activeNav == 4,
+                    onTap: () => setState(() => _activeNav = 4),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
@@ -339,10 +389,25 @@ class _NavIcon extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Padding(
-        padding: const EdgeInsets.all(10),
-        child:
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
             iconWidget ??
-            Icon(icon, color: active ? Colors.white : kMuted, size: 27),
+                Icon(icon, color: active ? Colors.white : kMuted, size: 26),
+            if (active && iconWidget == null) ...[
+              const SizedBox(height: 4),
+              Container(
+                width: 4,
+                height: 4,
+                decoration: const BoxDecoration(
+                  color: kAccent,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
@@ -367,7 +432,7 @@ class _PostCard extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
           child: Row(
             children: [
               Container(
@@ -376,18 +441,25 @@ class _PostCard extends StatelessWidget {
                   shape: BoxShape.circle,
                   gradient: LinearGradient(
                     colors: [
-                      Color(0xFFf58529),
-                      Color(0xFFdd2a7b),
-                      Color(0xFF8134af),
+                      Color(0xFFC9A84C),
+                      Color(0xFFE8C86A),
+                      Color(0xFFF0D78C),
                     ],
                     begin: Alignment.bottomLeft,
                     end: Alignment.topRight,
                   ),
                 ),
-                child: CircleAvatar(
-                  radius: 17,
-                  backgroundImage: NetworkImage(post['avatar'] as String),
-                  backgroundColor: kSurface,
+                child: Container(
+                  padding: const EdgeInsets.all(1.5),
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: kBg,
+                  ),
+                  child: CircleAvatar(
+                    radius: 17,
+                    backgroundImage: NetworkImage(post['avatar'] as String),
+                    backgroundColor: kSurface,
+                  ),
                 ),
               ),
               const SizedBox(width: 10),
@@ -406,12 +478,18 @@ class _PostCard extends StatelessWidget {
                           ),
                         ),
                         if (post['verified'] as bool)
-                          const Padding(
-                            padding: EdgeInsets.only(left: 4),
-                            child: Icon(
-                              Icons.verified,
-                              color: kAccent,
-                              size: 14,
+                          Padding(
+                            padding: const EdgeInsets.only(left: 4),
+                            child: ShaderMask(
+                              shaderCallback:
+                                  (b) => const LinearGradient(
+                                    colors: [kAccent, kAccent2],
+                                  ).createShader(b),
+                              child: const Icon(
+                                Icons.verified,
+                                color: Colors.white,
+                                size: 14,
+                              ),
                             ),
                           ),
                       ],
@@ -424,31 +502,26 @@ class _PostCard extends StatelessWidget {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                 decoration: BoxDecoration(
                   color:
-                      safe ? const Color(0xFF0d2e1a) : const Color(0xFF2e0d0d),
+                      safe
+                          ? const Color(0xFF22c55e).withOpacity(0.08)
+                          : const Color(0xFFef4444).withOpacity(0.08),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color:
-                        safe
-                            ? const Color(0xFF22c55e)
-                            : const Color(0xFFef4444),
-                    width: 0.8,
-                  ),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
                       safe ? Icons.shield : Icons.shield_outlined,
-                      size: 11,
+                      size: 10,
                       color:
                           safe
-                              ? const Color(0xFF22c55e)
-                              : const Color(0xFFef4444),
+                              ? const Color(0xFF4ade80)
+                              : const Color(0xFFf87171),
                     ),
-                    const SizedBox(width: 3),
+                    const SizedBox(width: 4),
                     Text(
                       safe ? 'Safe' : 'Flagged',
                       style: GoogleFonts.inter(
@@ -456,15 +529,15 @@ class _PostCard extends StatelessWidget {
                         fontWeight: FontWeight.w600,
                         color:
                             safe
-                                ? const Color(0xFF22c55e)
-                                : const Color(0xFFef4444),
+                                ? const Color(0xFF4ade80)
+                                : const Color(0xFFf87171),
                       ),
                     ),
                   ],
                 ),
               ),
               const SizedBox(width: 8),
-              const Icon(Icons.more_horiz, color: Colors.white, size: 20),
+              const Icon(Icons.more_horiz, color: Colors.white38, size: 20),
             ],
           ),
         ),
@@ -481,25 +554,32 @@ class _PostCard extends StatelessWidget {
                         width: double.infinity,
                         height: 380,
                         color: kSurface,
-                        child: const Center(
-                          child: CircularProgressIndicator(
-                            color: kAccent,
-                            strokeWidth: 1.5,
+                        child: Center(
+                          child: SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                              color: kAccent.withOpacity(0.6),
+                              strokeWidth: 1.5,
+                            ),
                           ),
                         ),
                       ),
         ),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
           child: Row(
             children: [
               GestureDetector(
                 onTap: onLike,
                 child: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 200),
+                  transitionBuilder: (child, anim) {
+                    return ScaleTransition(scale: anim, child: child);
+                  },
                   child: Icon(
                     isLiked ? Icons.favorite : Icons.favorite_border,
-                    color: isLiked ? const Color(0xFFff3b5c) : Colors.white,
+                    color: isLiked ? const Color(0xFFDC2626) : Colors.white,
                     size: 26,
                     key: ValueKey(isLiked),
                   ),
@@ -509,12 +589,12 @@ class _PostCard extends StatelessWidget {
               const Icon(
                 Icons.chat_bubble_outline,
                 color: Colors.white,
-                size: 24,
+                size: 23,
               ),
               const SizedBox(width: 16),
-              const Icon(Icons.send_outlined, color: Colors.white, size: 24),
+              const Icon(Icons.send_outlined, color: Colors.white, size: 23),
               const Spacer(),
-              const Icon(Icons.bookmark_border, color: Colors.white, size: 24),
+              const Icon(Icons.bookmark_border, color: Colors.white, size: 23),
             ],
           ),
         ),
@@ -544,7 +624,10 @@ class _PostCard extends StatelessWidget {
                 ),
                 TextSpan(
                   text: post['caption'] as String,
-                  style: GoogleFonts.inter(fontSize: 13, color: Colors.white),
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    color: Colors.white.withOpacity(0.85),
+                  ),
                 ),
               ],
             ),
@@ -557,7 +640,7 @@ class _PostCard extends StatelessWidget {
             style: GoogleFonts.inter(fontSize: 12.5, color: kMuted),
           ),
         ),
-        Divider(color: kBorder, height: 0.5, thickness: 0.5),
+        Divider(color: kBorder.withOpacity(0.4), height: 0.3, thickness: 0.3),
       ],
     );
   }

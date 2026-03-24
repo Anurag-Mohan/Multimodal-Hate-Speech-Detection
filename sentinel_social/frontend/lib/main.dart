@@ -16,12 +16,12 @@ class SentinelApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         brightness: Brightness.dark,
-        scaffoldBackgroundColor: const Color(0xFF0e1117),
-        primaryColor: const Color(0xFF00f2fe),
+        scaffoldBackgroundColor: const Color(0xFF09090B),
+        primaryColor: const Color(0xFFC9A84C),
         colorScheme: const ColorScheme.dark(
-          primary: Color(0xFF00f2fe),
-          secondary: Color(0xFF4facfe),
-          surface: Color(0xFF1a1c24),
+          primary: Color(0xFFC9A84C),
+          secondary: Color(0xFFF0D78C),
+          surface: Color(0xFF141416),
         ),
         textTheme: GoogleFonts.interTextTheme(
           ThemeData.dark().textTheme,
