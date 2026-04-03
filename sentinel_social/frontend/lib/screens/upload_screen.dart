@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'dart:math' as math;
 import '../services/api_service.dart';
+import '../services/feed_state.dart';
 
 const kBg = Color(0xFF09090B);
 const kSurface = Color(0xFF141416);
@@ -256,6 +257,15 @@ class _UploadScreenState extends State<UploadScreen>
       final result = await ApiService.scanMedia(_image!);
       if (!mounted) return;
       _scanlineCtrl.stop();
+
+      final feedState = FeedStateProvider.of(context);
+      final prob = (result['prob_hateful'] ?? 0.0) as num;
+      await feedState.addScanHistory(
+        imagePath: _image!.path,
+        toxicityScore: prob.toDouble(),
+        isSafe: !(result['is_hateful'] ?? false),
+      );
+
       setState(() {
         _scanResult = result;
         _isScanning = false;
@@ -289,13 +299,20 @@ class _UploadScreenState extends State<UploadScreen>
           onTap: () => Navigator.pop(context),
           child: const Icon(Icons.close, color: Colors.white70, size: 24),
         ),
-        title: Text(
-          'New Post',
-          style: GoogleFonts.outfit(
-            fontWeight: FontWeight.w600,
-            fontSize: 18,
-            color: Colors.white,
-          ),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.shield_outlined, color: kAccent, size: 18),
+            const SizedBox(width: 8),
+            Text(
+              'Content Scanner',
+              style: GoogleFonts.outfit(
+                fontWeight: FontWeight.w600,
+                fontSize: 18,
+                color: Colors.white,
+              ),
+            ),
+          ],
         ),
         centerTitle: true,
         actions: [
@@ -333,26 +350,281 @@ class _UploadScreenState extends State<UploadScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _buildImageArea(),
-            const SizedBox(height: 20),
-            if (_image != null && !_isScanning && _scanResult == null)
-              _buildScanButton(),
-            if (_isScanning || _logs.isNotEmpty && _scanResult == null) ...[
+            if (_image == null) ...[
+              _buildUploadHero(),
               const SizedBox(height: 20),
-              _buildScanningPanel(),
-            ],
-            if (_scanResult != null)
-              FadeTransition(
-                opacity: _resultFade,
-                child: SlideTransition(
-                  position: _resultSlide,
-                  child: _buildResultCard(),
+              _buildHowItWorks(),
+              const SizedBox(height: 20),
+              _buildPipelineInfo(),
+            ] else ...[
+              _buildImageArea(),
+              const SizedBox(height: 20),
+              if (!_isScanning && _scanResult == null)
+                _buildScanButton(),
+              if (_isScanning || _logs.isNotEmpty && _scanResult == null) ...[
+                const SizedBox(height: 20),
+                _buildScanningPanel(),
+              ],
+              if (_scanResult != null)
+                FadeTransition(
+                  opacity: _resultFade,
+                  child: SlideTransition(
+                    position: _resultSlide,
+                    child: _buildResultCard(),
+                  ),
                 ),
-              ),
+            ],
             const SizedBox(height: 48),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildUploadHero() {
+    return AnimatedBuilder(
+      animation: _glowAnim,
+      builder: (_, __) {
+        return GestureDetector(
+          onTap: _showPickerSheet,
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 44, horizontal: 24),
+            decoration: BoxDecoration(
+              color: kSurface,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: kAccent.withOpacity(0.08 + _glowAnim.value * 0.08),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: kAccent.withOpacity(0.04 + _glowAnim.value * 0.04),
+                  blurRadius: 40,
+                  spreadRadius: -5,
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                Container(
+                  width: 76,
+                  height: 76,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      colors: [kAccent.withOpacity(0.12), kAccent.withOpacity(0.04)],
+                    ),
+                    border: Border.all(color: kAccent.withOpacity(0.2)),
+                  ),
+                  child: const Icon(Icons.document_scanner_outlined, color: kAccent, size: 36),
+                ),
+                const SizedBox(height: 20),
+                ShaderMask(
+                  shaderCallback: (b) => const LinearGradient(colors: [kAccent, kAccent2]).createShader(b),
+                  child: Text(
+                    'Upload Meme for Analysis',
+                    style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.w800, color: Colors.white),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Sentinel-X will scan your content using multimodal\nAI to detect hidden hate speech before posting.',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(color: kMuted, fontSize: 13, height: 1.5),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _pickBtn(Icons.photo_library_rounded, 'Gallery', () => _pickImage(ImageSource.gallery)),
+                    const SizedBox(width: 12),
+                    _pickBtn(Icons.camera_alt_rounded, 'Camera', () => _pickImage(ImageSource.camera)),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _pickBtn(IconData icon, String label, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [kAccent.withOpacity(0.08), kAccent.withOpacity(0.03)],
+          ),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: kAccent.withOpacity(0.2)),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: kAccent, size: 20),
+            const SizedBox(width: 8),
+            Text(label, style: GoogleFonts.outfit(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHowItWorks() {
+    final steps = [
+      ('Upload', 'Select a meme from gallery or camera', Icons.cloud_upload_outlined, const Color(0xFF60a5fa)),
+      ('Scan', 'AI analyses image + text for toxicity', Icons.shield_outlined, kAccent),
+      ('Result', 'Safe content gets posted to your feed', Icons.check_circle_outline, const Color(0xFF4ade80)),
+    ];
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: kSurface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: kBorder.withOpacity(0.5)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            Icon(Icons.auto_awesome, color: kAccent, size: 16),
+            const SizedBox(width: 8),
+            Text('HOW IT WORKS', style: GoogleFonts.outfit(color: kAccent, fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 1.5)),
+          ]),
+          const SizedBox(height: 16),
+          ...steps.asMap().entries.map((e) {
+            final i = e.key;
+            final (title, desc, icon, color) = e.value;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Column(
+                    children: [
+                      Container(
+                        width: 36, height: 36,
+                        decoration: BoxDecoration(
+                          color: color.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: color.withOpacity(0.2)),
+                        ),
+                        child: Icon(icon, color: color, size: 18),
+                      ),
+                      if (i < steps.length - 1)
+                        Container(width: 1.5, height: 16, color: kBorder.withOpacity(0.4)),
+                    ],
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(title, style: GoogleFonts.outfit(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700)),
+                          const SizedBox(height: 3),
+                          Text(desc, style: GoogleFonts.inter(color: kMuted, fontSize: 12, height: 1.4)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPipelineInfo() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: kSurface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: kBorder.withOpacity(0.5)),
+      ),
+      child: Column(
+        children: [
+          Row(children: [
+            Icon(Icons.memory, color: kAccent, size: 16),
+            const SizedBox(width: 8),
+            Text('DETECTION PIPELINE', style: GoogleFonts.outfit(color: kAccent, fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 1.5)),
+          ]),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              _pipeChip('CNN', Icons.grid_view, const Color(0xFF818cf8)),
+              _pipeArrow(),
+              _pipeChip('CLIP', Icons.remove_red_eye, const Color(0xFF60a5fa)),
+              _pipeArrow(),
+              _pipeChip('OCR', Icons.text_fields, const Color(0xFF34d399)),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              _pipeChip('BiLSTM', Icons.swap_horiz, const Color(0xFF34d399)),
+              _pipeArrow(),
+              _pipeChip('Attention', Icons.merge_type, kAccent),
+              _pipeArrow(),
+              _pipeChip('Verdict', Icons.shield, const Color(0xFFf87171)),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: kAccent.withOpacity(0.04),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: kAccent.withOpacity(0.1)),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.speed, color: kAccent.withOpacity(0.6), size: 14),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '82% AUROC on Facebook Hateful Memes Dataset',
+                    style: GoogleFonts.firaCode(color: kAccent.withOpacity(0.7), fontSize: 10, fontWeight: FontWeight.w500),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _pipeChip(String label, IconData icon, Color color) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.06),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: color.withOpacity(0.12)),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: color, size: 16),
+            const SizedBox(height: 4),
+            Text(label, style: GoogleFonts.firaCode(color: color, fontSize: 8, fontWeight: FontWeight.w600)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _pipeArrow() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 2),
+      child: Icon(Icons.chevron_right, color: kBorder, size: 14),
     );
   }
 
@@ -362,7 +634,7 @@ class _UploadScreenState extends State<UploadScreen>
       builder: (_, child) {
         return AnimatedContainer(
           duration: const Duration(milliseconds: 400),
-          height: _image != null ? 320 : 240,
+          height: 320,
           decoration: BoxDecoration(
             color: kSurface,
             borderRadius: BorderRadius.circular(20),
@@ -370,9 +642,7 @@ class _UploadScreenState extends State<UploadScreen>
               color:
                   _isScanning
                       ? kAccent.withOpacity(0.15 + _glowAnim.value * 0.15)
-                      : _image != null
-                      ? kBorder.withOpacity(0.6)
-                      : kBorder.withOpacity(0.4),
+                      : kBorder.withOpacity(0.6),
               width: 1,
             ),
             boxShadow:
@@ -390,7 +660,7 @@ class _UploadScreenState extends State<UploadScreen>
           child: child,
         );
       },
-      child: _image != null ? _buildImagePreview() : _buildPickerHint(),
+      child: _buildImagePreview(),
     );
   }
 
@@ -496,83 +766,6 @@ class _UploadScreenState extends State<UploadScreen>
             ),
           ),
       ],
-    );
-  }
-
-  Widget _buildPickerHint() {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Container(
-          width: 72,
-          height: 72,
-          decoration: BoxDecoration(
-            color: kBorder.withOpacity(0.4),
-            borderRadius: BorderRadius.circular(36),
-            border: Border.all(color: kBorder.withOpacity(0.6)),
-          ),
-          child: Icon(
-            Icons.add_photo_alternate_outlined,
-            color: kMuted.withOpacity(0.7),
-            size: 34,
-          ),
-        ),
-        const SizedBox(height: 16),
-        Text(
-          'Select media to scan',
-          style: GoogleFonts.outfit(
-            color: Colors.white,
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          'Choose from gallery or take a photo',
-          style: GoogleFonts.inter(color: kMuted, fontSize: 13),
-        ),
-        const SizedBox(height: 24),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            _miniBtn(
-              Icons.photo_library_outlined,
-              'Library',
-              () => _pickImage(ImageSource.gallery),
-            ),
-            const SizedBox(width: 12),
-            _miniBtn(
-              Icons.camera_alt_outlined,
-              'Camera',
-              () => _pickImage(ImageSource.camera),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _miniBtn(IconData icon, String label, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
-        decoration: BoxDecoration(
-          border: Border.all(color: kBorder),
-          borderRadius: BorderRadius.circular(12),
-          color: kSurface.withOpacity(0.5),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: kAccent, size: 18),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: GoogleFonts.inter(color: Colors.white, fontSize: 13),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -1024,7 +1217,25 @@ class _UploadScreenState extends State<UploadScreen>
                       color: Colors.transparent,
                       child: InkWell(
                         borderRadius: BorderRadius.circular(12),
-                        onTap: () => Navigator.pop(context),
+                        onTap: () async {
+                          final feedState = FeedStateProvider.of(context);
+                          await feedState.addPost(
+                            imagePath: _image!.path,
+                            toxicityScore: (_scanResult?['prob_hateful'] ?? 0.0) as double,
+                            extractedText: _scanResult?['extracted_text'] ?? '',
+                            isSafe: true,
+                            caption: 'Scanned & approved 🛡️',
+                          );
+                          if (!mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                            content: Text('Posted to feed! ✨', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600)),
+                            backgroundColor: const Color(0xFF22c55e),
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            margin: const EdgeInsets.all(16),
+                          ));
+                          Navigator.pop(context);
+                        },
                         child: Padding(
                           padding: const EdgeInsets.symmetric(vertical: 15),
                           child: Row(
